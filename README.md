@@ -9,6 +9,7 @@ git clone https://github.com/ristic90/pricing_assignment.git
 2. Create virtual environment
 
 ```commandline
+cd pricing_assignment
 python -m venv .venv
 ```
 
