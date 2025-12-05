@@ -36,13 +36,13 @@ pytest
 6. Build and run the images
 
 ```commandline
-docker compose up
+docker compose up -d
 ```
 
 FastAPI app will be available on localhost:8080.  
 The database is initialized with the `init.sql` script to prepopulate it with data.
 
-7. Run `assignment_tests.py` file in new terminal window of the current working directory
+7. Run `assignment_tests.py` file which contains tests specified in the assignment.
 
 ```commandline
 python  assignment_tests.py
