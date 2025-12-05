@@ -38,7 +38,8 @@ pytest
 docker compose up
 ```
 
-FastAPI app will be available on localhost:8080.
+FastAPI app will be available on localhost:8080.  
+The database is initialized with the `init.sql` script to prepopulate it with data.
 
 7. Run `assignment_tests.py` file in new terminal window of the current working directory
 
