@@ -63,7 +63,6 @@ def filter_books(
 ):
     filter_data = filters.model_dump(exclude_unset=True)
     filtered_books = service.filter_books(**filter_data)
-    print("Filtered books: ", filtered_books)
     books = [BookAPI.model_validate(book.to_dict()) for book in filtered_books]
     logging.info(f"[GET] Filtered books: {books}")
     return books
@@ -99,7 +98,6 @@ def update_book(
     book_update: BookUpdate,
     service: BookService = Depends(get_book_service),
 ):
-    print("Book update: ", book_update)
     try:
         book: BookEntity = service.update_book(
             book_id,
