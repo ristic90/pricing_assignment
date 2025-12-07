@@ -1,5 +1,5 @@
 # Pricing assignemt
-Setup
+# Setup
 
 1. Within terminal, clone the project in desired directory
 
