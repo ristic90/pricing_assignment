@@ -3,8 +3,8 @@ from sqlalchemy import create_engine
 
 DB_USER = "postgres"
 DB_PASSWORD = "secret"
-# DB_HOST = "db"
-DB_HOST = "localhost"
+DB_HOST = "db"
+# DB_HOST = "localhost"
 DB_PORT = 5432
 DB_NAME = "mydb"
 
