@@ -1,3 +1,9 @@
+from http.client import HTTPException
+
+import pytest
+from starlette.status import HTTP_404_NOT_FOUND
+
+
 def test_get_health(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -14,6 +20,13 @@ def test_get_book_by_id(client):
     response = client.get("/books/1")
     assert response.status_code == 200
     assert response.json()["author"] == "George Orwell"
+
+
+def test_get_book_by_id_doesnt_exist(client):
+    book_id = 10000
+    response = client.get(f"/books/{book_id}")
+
+    assert response.status_code == 404
 
 
 def test_add_book(client, item_to_add):

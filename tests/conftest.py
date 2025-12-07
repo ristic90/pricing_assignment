@@ -1,35 +1,61 @@
+from typing import cast
+from unittest.mock import Mock
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base, get_db
-from app.db_models import Book as BookORM
+from app.api.dependencies import get_book_service
+from app.application.services.book_service import BookService
+from app.infrastructure.database.base import Base
+from app.infrastructure.database.models.book_sqla import BookORM
+from app.infrastructure.database.session import get_db
+from app.api.models import BookAPI, BookUpdate
+from app.domain.entities.book import BookEntity
+from app.domain.repositories.book_repository_protocol import BookRepositoryProtocol
+from app.infrastructure.repositories.sqlalchemy_book_repository import (
+    SQLAlchemyBookRepository,
+)
 from app.main import app
-from app.pydantic_models import Book, BookUpdate
 
 # SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
 
-TestingSessionLocal = sessionmaker(
-    bind=engine,
-    autoflush=False,
-    autocommit=False,
-)
+@pytest.fixture
+def mock_repo() -> BookRepositoryProtocol:
+    return cast(
+        BookRepositoryProtocol, Mock()
+    )  # fix type checking in book_service fixture
+
+
+@pytest.fixture
+def book_service_mock(mock_repo):
+    return BookService(mock_repo)
+
+
+@pytest.fixture
+def in_memory_db():
+    engine = create_engine(
+        "sqlite:///./test.db",
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(bind=engine)
+    TestingSessionLocal = sessionmaker(
+        bind=engine,
+    )
+
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        Base.metadata.drop_all(bind=engine)
+        db.close()
 
 
 @pytest.fixture()
-def setup_db():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-
+def filled_db(in_memory_db):
     # Preload test data
-    session = TestingSessionLocal()
     books = [
         BookORM(
             id=1,
@@ -56,38 +82,60 @@ def setup_db():
             price=10.99,
         ),
     ]
-    session.add_all(books)
-    session.commit()
-    session.close()
+    in_memory_db.add_all(books)
+    in_memory_db.commit()
+    in_memory_db.close()
 
-    yield
-
-    # Drop tables
-    Base.metadata.drop_all(bind=engine)
+    return in_memory_db
 
 
 @pytest.fixture()
-def db_session(setup_db):
-    """Provide a session for each test."""
-    session = TestingSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+def sqlalchemy_repo(filled_db):
+    return SQLAlchemyBookRepository(filled_db)
+
+
+@pytest.fixture
+def book_service(sqlalchemy_repo):
+    return BookService(sqlalchemy_repo)
 
 
 @pytest.fixture()
-def client(db_session):
+def client(filled_db, sqlalchemy_repo, book_service):
     def override_get_db():
-        yield db_session
+        yield filled_db
 
-    app.dependency_overrides[get_db] = override_get_db
+    def override_get_book_repository():
+        return sqlalchemy_repo
+
+    def override_get_book_service():
+        return book_service
+
+    app.dependency_overrides[get_db] = override_get_db()
+    app.dependency_overrides[get_book_service] = override_get_book_service
+    app.dependency_overrides[get_db] = override_get_book_repository
     return TestClient(app)
 
 
 @pytest.fixture()
+def entity_book_add():
+    return BookEntity(
+        id=4,
+        title="The Added Book",
+        author="Adder Addition",
+        pages=50,
+        rating=2.2,
+        price=5.99,
+    )
+
+
+@pytest.fixture()
+def entity_book_update_data():
+    return {"title": "The Updated Title", "price": 12.49, "rating": 2.2}
+
+
+@pytest.fixture()
 def item_to_add():
-    return Book(
+    return BookAPI(
         id=4,
         title="The Added Book",
         author="Adder Addition",
