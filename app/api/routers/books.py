@@ -128,7 +128,7 @@ def delete_book(book_id: int, service: BookService = Depends(get_book_service)):
     except BookDoesntExist as e:
         raise HTTPException(
             status_code=404,
-            detail=f"Book with id {book_id} not found",
+            detail=str(e),
         )
     except DatabaseError as e:
         raise HTTPException(
